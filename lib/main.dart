@@ -1,4 +1,5 @@
 import 'package:flame/game.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -6,11 +7,20 @@ import 'game/palette.dart';
 import 'game/taimaroku_game.dart';
 import 'game/tuning.dart';
 
+/// 画面の向きと没入モードは Android / iOS でしか意味がなく、
+/// Web やデスクトップで呼ぶとアサーションで落ちる。
+bool get _isMobile =>
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // 片手・縦持ちが前提。横向きにはしない。
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  if (_isMobile) {
+    // 片手・縦持ちが前提。横向きにはしない。
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
   runApp(const TaimarokuApp());
 }
 
