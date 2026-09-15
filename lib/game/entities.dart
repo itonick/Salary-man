@@ -122,7 +122,7 @@ final Kind backpackMajin = Kind(
   lane: Lane.high,
   counter: Counter.crouch,
   attackable: false,
-  halfWidthM: 0.46,
+  halfWidthM: 0.14,
   draw: (canvas, origin, ppm, color, t) {
     final p = Poses.stand(t * 1.8);
     // 振り向きざまの横薙ぎ。腕が頭の高さを通る。
@@ -160,7 +160,7 @@ final Kind carryCase = Kind(
   lane: Lane.low,
   counter: Counter.jump,
   attackable: false,
-  halfWidthM: 0.30,
+  halfWidthM: 0.14,
   draw: (canvas, origin, ppm, color, t) {
     final stroke = Paint()
       ..color = color

@@ -24,20 +24,27 @@ class Tuning {
   static const double carLengthM = 20.0;
 
   /// 次の駅に着くまでの持ち時間。これが尽きたら踏破終了。
-  static const double timeLimitSec = 90.0;
+  /// 15号車の入口(280m)まで全力で108秒。かがみと転倒の分を見込んで130秒。
+  static const double timeLimitSec = 130.0;
 
   // ── 吊り革ジャンプ（上フリック） ─────────────────────
   static const double jumpSec = 0.66;
   static const double jumpHeightM = 1.15;
 
+  /// この高さを超えている間は、足元の障害を越えていると判定する。
+  static const double jumpClearHeightM = 0.30;
+
   /// 着地硬直。この間は無防備 ── 連続ジャンプ逃げを封じる。
   static const double jumpLandingLagSec = 0.10;
 
   // ── かがむ（下フリック） ────────────────────────────
-  static const double crouchSec = 0.46;
+  static const double crouchSec = 0.66;
+
+  /// かがみ始めてから頭上を避けられるようになるまで。
+  static const double crouchStartupSec = 0.04;
 
   /// かがんでいる間の減速率。避けるたびに時間を失う。
-  static const double crouchSpeedFactor = 0.72;
+  static const double crouchSpeedFactor = 0.85;
 
   // ── 薙ぐ（タップ） ─────────────────────────────────
   static const double swingSec = 0.30;
@@ -81,4 +88,10 @@ class Tuning {
 
   /// 床のライン。棒人間はこの上に立つ。
   static const double groundYRatio = 0.66;
+
+  /// 体幹ゲージの高さ。
+  static const double gaugeYRatio = 0.76;
+
+  /// 画面下の操作ボタンの高さ（64〜120px に収める）。
+  static const double padHeightRatio = 0.11;
 }

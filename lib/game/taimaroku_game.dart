@@ -305,9 +305,9 @@ class TaimarokuGame extends FlameGame {
 
       // 何をすればいいかのラベル。Phase 1 は検証用に常時出す。
       final hint = switch (p.e.kind.counter) {
-        Counter.swing => 'タップ',
-        Counter.jump => '上',
-        Counter.crouch => '下',
+        Counter.swing => '薙ぐ',
+        Counter.jump => '↑',
+        Counter.crouch => '↓',
       };
       _text(canvas, hint, Offset(x, _groundY + ppm * 0.20),
           color: Palette.enemy.withValues(alpha: 0.7), size: ppm * 0.15, center: true);
@@ -383,7 +383,7 @@ class TaimarokuGame extends FlameGame {
     }
 
     // 体幹ゲージ。棒人間の傾きが本体で、これは補助。
-    final gy = size.y * 0.80;
+    final gy = size.y * Tuning.gaugeYRatio;
     _text(canvas, '体幹', Offset(pad, gy - size.x * 0.048),
         color: Palette.text, size: size.x * 0.032);
     final gw = size.x - pad * 2;
@@ -399,19 +399,11 @@ class TaimarokuGame extends FlameGame {
       Paint()..color = player.stance < 30 ? Palette.enemy : Palette.stance,
     );
 
-    // 操作ヒントと検証用の数字。
-    _text(
-      canvas,
-      'タップ＝薙ぐ   ↑＝吊り革ジャンプ   ↓＝かがむ',
-      Offset(size.x / 2, gy + size.y * 0.035),
-      color: Palette.dim,
-      size: size.x * 0.032,
-      center: true,
-    );
+    // 検証用の数字。操作の説明は画面下のボタンが兼ねる。
     _text(
       canvas,
       '被弾 ${player.hits}   転倒 ${player.falls}',
-      Offset(size.x / 2, gy + size.y * 0.075),
+      Offset(size.x / 2, gy + size.y * 0.025),
       color: Palette.dim,
       size: size.x * 0.030,
       center: true,
@@ -475,7 +467,12 @@ class TaimarokuGame extends FlameGame {
     final tp = TextPainter(
       text: TextSpan(
         text: s,
-        style: TextStyle(color: color, fontSize: size, height: 1.2),
+        style: TextStyle(
+          color: color,
+          fontSize: size,
+          height: 1.2,
+          fontFamily: 'DotGothic16',
+        ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();

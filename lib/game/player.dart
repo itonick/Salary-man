@@ -63,11 +63,14 @@ class Player {
       : 0.0;
 
   /// 足元をすり抜けられるか（キャリーバッグ・傘を飛び越えられているか）。
-  bool get clearsLow => state == PlayerState.jumping && liftM > 0.45;
+  bool get clearsLow =>
+      state == PlayerState.jumping && liftM > Tuning.jumpClearHeightM;
 
   /// 頭上をやり過ごせているか（リュック魔人の横薙ぎをかがんで避けられているか）。
+  /// かがみ始めのごく短い間を除き、かがんでいる間はずっと有効。
+  /// ここを中間だけに絞ると、敵と重なる時間を覆えず必ず被弾する。
   bool get duckingHigh =>
-      state == PlayerState.crouching && crouchT > 0.10 && crouchT < Tuning.crouchSec - 0.08;
+      state == PlayerState.crouching && crouchT > Tuning.crouchStartupSec;
 
   // ── 入力 ────────────────────────────────────────────
 
