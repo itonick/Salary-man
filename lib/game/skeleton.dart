@@ -26,6 +26,27 @@ class Pose {
 
   /// 前傾角（ラジアン）。腰を軸に体幹の残量ぶん前へ倒す。
   double lean = 0.0;
+
+  /// 2つのポーズを関節ごとに補間する。
+  /// 状態が切り替わる瞬間に姿勢が飛ばないよう、短い時間で滑らかにつなぐ。
+  static Pose lerp(Pose a, Pose b, double t) {
+    Offset l(Offset x, Offset y) => Offset.lerp(x, y, t)!;
+    return Pose()
+      ..head = l(a.head, b.head)
+      ..neck = l(a.neck, b.neck)
+      ..hip = l(a.hip, b.hip)
+      ..elbowF = l(a.elbowF, b.elbowF)
+      ..handF = l(a.handF, b.handF)
+      ..elbowB = l(a.elbowB, b.elbowB)
+      ..handB = l(a.handB, b.handB)
+      ..kneeF = l(a.kneeF, b.kneeF)
+      ..footF = l(a.footF, b.footF)
+      ..kneeB = l(a.kneeB, b.kneeB)
+      ..footB = l(a.footB, b.footB)
+      ..headR = b.headR
+      ..gripStrap = t < 0.5 ? a.gripStrap : b.gripStrap
+      ..lean = a.lean + (b.lean - a.lean) * t;
+  }
 }
 
 /// 骨格の基準寸法（メートル）。
@@ -276,6 +297,20 @@ class Ragdoll {
     link(2, 9); link(9, 10); // 後脚
     link(0, 2); // 頭-腰（胴が折れすぎないように）
   }
+
+  /// 崩れた今の姿勢をポーズとして取り出す。起き上がりの補間の始点に使う。
+  Pose toPose() => Pose()
+    ..head = pos[0]
+    ..neck = pos[1]
+    ..hip = pos[2]
+    ..elbowF = pos[3]
+    ..handF = pos[4]
+    ..elbowB = pos[5]
+    ..handB = pos[6]
+    ..kneeF = pos[7]
+    ..footF = pos[8]
+    ..kneeB = pos[9]
+    ..footB = pos[10];
 
   void update(double dt) {
     for (var i = 0; i < pos.length; i++) {

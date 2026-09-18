@@ -75,6 +75,24 @@ class Tuning {
   /// 起き上がるまでの秒数。失うのは命ではなく時間。
   static const double fallSec = 3.0;
 
+  // ── 滑らかさ ─────────────────────────────────────────
+  /// 動作中に押した入力を預かっておく時間。
+  /// この間に動けるようになれば、その瞬間に出る。
+  static const double inputBufferSec = 0.20;
+
+  /// 動作が切り替わるときに姿勢を補間する時間。
+  static const double poseBlendSec = 0.08;
+
+  /// 転倒から立ち上がるときの補間時間。
+  static const double getUpBlendSec = 0.35;
+
+  /// 速度を目標値へ寄せる速さ（1秒あたり）。減速は速く、加速はやや緩やか。
+  static const double speedEaseDown = 14.0;
+  static const double speedEaseUp = 8.0;
+
+  /// 1フレームで進める時間の上限。ブラウザが一瞬止まってもワープしない。
+  static const double maxFrameSec = 1 / 30;
+
   // ── 入力 ───────────────────────────────────────────
   /// この距離を縦に動かした時点でフリック確定（離すのを待たない）。
   static const double flickThresholdPx = 26.0;

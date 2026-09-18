@@ -96,6 +96,8 @@ class TaimarokuGame extends FlameGame {
   @override
   void update(double dt) {
     super.update(dt);
+    // タブの切り替えや読み込みで間が空いても、その分を一気に進めない。
+    dt = math.min(dt, Tuning.maxFrameSec);
     _clock += dt;
     if (_shake > 0) _shake -= dt;
     if (state != GameState.running) return;
@@ -183,10 +185,11 @@ class TaimarokuGame extends FlameGame {
     super.render(canvas);
     canvas.save();
     if (_shake > 0) {
-      final s = _shake * 26;
+      // 毎フレームのランダムではなく、減衰する揺れにする。ガタつかせない。
+      final amp = _shake * 18;
       canvas.translate(
-        (math.Random().nextDouble() - 0.5) * s,
-        (math.Random().nextDouble() - 0.5) * s,
+        math.sin(_clock * 71) * amp,
+        math.cos(_clock * 53) * amp * 0.6,
       );
     }
 
