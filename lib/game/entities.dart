@@ -394,8 +394,7 @@ List<StageEntity> buildCar(int carNo, double carLengthM) {
   final pool = kindsFor(carNo);
 
   // 号車が進むほど数が増える。
-  final count = math.min(Tuning.maxEnemiesPerCar,
-      Tuning.baseEnemiesPerCar + ((carNo - 1) * 2 / 3).floor());
+  final count = Tuning.enemyCountFor(carNo);
 
   // 間隔は「距離」ではなく「秒」で決める。速くなるほど実距離は広がるが、
   // 前の敵を捌いてから次に反応するまでの時間は号車が進むほど短くなる。

@@ -25,14 +25,19 @@ class Tuning {
   /// 1両進むごとに増える速度の割合。
   /// 表示倍率は1号車の速度で決まっているので、速くなるほど
   /// 「敵が見えてから届くまでの時間」が実質的に短くなる。
-  static const double speedGainPerCar = 0.05;
+  /// 1号車で1.60秒、15号車では0.78秒しかない。
+  static const double speedGainPerCar = 0.075;
 
-  /// 速度の上限（1号車比）。ここで頭打ちにして理不尽にしない。
-  static const double maxSpeedMul = 1.7;
+  /// 速度の上限（1号車比）。
+  static const double maxSpeedMul = 2.1;
 
   /// 1両あたりの敵の数。
   static const int baseEnemiesPerCar = 4;
-  static const int maxEnemiesPerCar = 10;
+  static const int maxEnemiesPerCar = 12;
+
+  /// [carNo] 号車に置く敵の数。
+  static int enemyCountFor(int carNo) =>
+      math.min(maxEnemiesPerCar, baseEnemiesPerCar + ((carNo - 1) * 0.9).floor());
 
   /// [carNo] 号車での速度倍率。
   static double speedMulFor(int carNo) =>
@@ -43,8 +48,10 @@ class Tuning {
 
   /// [carNo] 号車での敵と敵の最小間隔（秒）。
   /// 前の敵を捌いてから次に反応するまでの余裕。
+  /// 前の動作（最長はジャンプの0.56秒）が終わる前に次が来ると、
+  /// 腕に関係なく当たってしまう。下限はそれより必ず長く取る。
   static double minGapSecFor(int carNo) =>
-      math.max(0.58, 0.90 - 0.022 * (carNo - 1));
+      math.max(0.66, 0.95 - 0.028 * (carNo - 1));
 
   /// 号車が変わったときの告知を出している時間。
   static const double bannerSec = 1.8;
@@ -54,34 +61,38 @@ class Tuning {
   static const double carLengthM = 20.0;
 
   /// 次の駅に着くまでの持ち時間。これが尽きたら踏破終了。
-  /// 15号車の入口(280m)まで全力で108秒。かがみと転倒の分を見込んで130秒。
-  static const double timeLimitSec = 130.0;
+  /// 最適に操作して走り切って約76秒。余りは4秒しかない。
+  /// 転倒1回が3.5秒なので、実質「一度も転ばずに、ほぼ最適で走る」ことがクリア条件。
+  /// ここがクリア率を決める最大のつまみ。
+  static const double timeLimitSec = 80.0;
 
   // ── 吊り革ジャンプ（上フリック） ─────────────────────
-  static const double jumpSec = 0.66;
+  static const double jumpSec = 0.56;
   static const double jumpHeightM = 1.15;
 
   /// この高さを超えている間は、足元の障害を越えていると判定する。
-  static const double jumpClearHeightM = 0.30;
+  static const double jumpClearHeightM = 0.34;
 
   /// 着地硬直。この間は無防備 ── 連続ジャンプ逃げを封じる。
   static const double jumpLandingLagSec = 0.10;
 
   // ── かがむ（下フリック） ────────────────────────────
-  static const double crouchSec = 0.66;
+  static const double crouchSec = 0.46;
 
   /// かがみ始めてから頭上を避けられるようになるまで。
   static const double crouchStartupSec = 0.04;
 
   /// かがんでいる間の減速率。避けるたびに時間を失う。
-  static const double crouchSpeedFactor = 0.85;
+  static const double crouchSpeedFactor = 0.94;
 
   // ── 薙ぐ（タップ） ─────────────────────────────────
-  static const double swingSec = 0.30;
+  static const double swingSec = 0.34;
 
   /// 判定が出ている区間（swingSec に対する秒数）。
-  static const double swingHitFromSec = 0.06;
-  static const double swingHitToSec = 0.20;
+  /// 速い号車では1フレームに進む距離が大きいので、ここが短いと
+  /// 「振ったのに抜けられた」が起きる。
+  static const double swingHitFromSec = 0.05;
+  static const double swingHitToSec = 0.26;
 
   /// カバンの届く距離。
   static const double swingReachM = 1.2;
@@ -90,12 +101,14 @@ class Tuning {
 
   // ── 体幹 ───────────────────────────────────────────
   static const double stanceMax = 100.0;
-  static const double stanceRegenPerSec = 7.0;
+  static const double stanceRegenPerSec = 5.0;
   static const double stanceCostSwing = 7.0;
-  static const double stanceCostHit = 26.0;
 
-  /// 転倒から起き上がったときの残量。
-  static const double stanceAfterFall = 55.0;
+  /// 被弾1回の消費。3回ぶつかれば転ぶ。
+  static const double stanceCostHit = 34.0;
+
+  /// 転倒から起き上がったときの残量。次の1回で また転ぶ位置から再開する。
+  static const double stanceAfterFall = 45.0;
 
   /// 体幹が減るほど棒人間が前のめりになる。最大の傾き（ラジアン）。
   /// ゲージを見なくても残量が分かるようにするための演出。
@@ -103,7 +116,7 @@ class Tuning {
 
   // ── 転倒 ───────────────────────────────────────────
   /// 起き上がるまでの秒数。失うのは命ではなく時間。
-  static const double fallSec = 3.0;
+  static const double fallSec = 3.5;
 
   // ── 滑らかさ ─────────────────────────────────────────
   /// 動作中に押した入力を預かっておく時間。

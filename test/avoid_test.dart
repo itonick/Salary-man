@@ -77,9 +77,15 @@ void main() {
   });
 
   test('号車が進むほど敵が増え、新手が加わる', () {
-    expect(buildCar(1, Tuning.carLengthM).length, lessThan(5));
-    expect(buildCar(12, Tuning.carLengthM).length,
-        greaterThan(buildCar(3, Tuning.carLengthM).length));
+    // 1号車はチュートリアルなので3体だけ。
+    expect(buildCar(1, Tuning.carLengthM).length, 3);
+    // 号車が進むほど、敵と敵の間隔（秒）が詰まる＝手数が増える。
+    expect(Tuning.minGapSecFor(12), lessThan(Tuning.minGapSecFor(3)));
+    expect(Tuning.enemyCountFor(12), greaterThan(Tuning.enemyCountFor(3)));
+    for (var car = 2; car <= 20; car++) {
+      expect(buildCar(car, Tuning.carLengthM).length, greaterThanOrEqualTo(4),
+          reason: '$car号車 が空きすぎている');
+    }
     expect(kindsFor(1).length, 3);
     expect(kindsFor(15).length, allKinds.length);
     expect(newKindAt(2)?.id, phoneZombie.id);
