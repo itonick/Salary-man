@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'skeleton.dart';
+import 'tuning.dart';
 
 /// 来る高さ。プレイヤーの取るべき行動と1対1で対応する。
 enum Lane { high, mid, low }
@@ -188,8 +189,185 @@ final Kind carryCase = Kind(
   },
 );
 
+/// スマホゾンビ。画面を見たまま逆走してくる。タップで押しのける。
+final Kind phoneZombie = Kind(
+  id: 'phone_zombie',
+  label: 'スマホゾンビ',
+  lane: Lane.mid,
+  counter: Counter.swing,
+  attackable: true,
+  halfWidthM: 0.30,
+  draw: (canvas, origin, ppm, color, t) {
+    final p = Poses.stand(t * 1.6);
+    // うつむいて、両腕を前に出している。
+    p.head = p.head + const Offset(0.06, -0.10);
+    p.handF = p.neck + const Offset(0.26, -0.30);
+    p.handB = p.neck + const Offset(0.16, -0.32);
+    p.elbowF = p.neck + const Offset(0.16, -0.18);
+    p.elbowB = p.neck + const Offset(0.08, -0.20);
+    StickPainter.draw(canvas, p, origin, ppm, color: color);
+
+    final stroke = Paint()
+      ..color = color
+      ..strokeWidth = math.max(1.8, ppm * 0.028)
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    Offset s(Offset m) => Offset(origin.dx + m.dx * ppm, origin.dy - m.dy * ppm);
+
+    // 光る板。これが目印。
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTRB(
+          s(const Offset(0.13, 0)).dx, s(const Offset(0, 1.20)).dy,
+          s(const Offset(0.35, 0)).dx, s(const Offset(0, 1.02)).dy,
+        ),
+        Radius.circular(ppm * 0.03),
+      ),
+      stroke,
+    );
+    // 画面から漏れる光
+    final glow = 0.6 + 0.4 * math.sin(t * 7);
+    for (final dx in [0.14, 0.24, 0.34]) {
+      canvas.drawLine(
+        s(Offset(dx, 1.24)),
+        s(Offset(dx + 0.03, 1.24 + 0.12 * glow)),
+        stroke,
+      );
+    }
+  },
+);
+
+/// 傘の刃。濡れた折りたたみ傘が水平に突き出ている。飛び越える。
+final Kind umbrellaBlade = Kind(
+  id: 'umbrella_blade',
+  label: '傘の刃',
+  lane: Lane.low,
+  counter: Counter.jump,
+  attackable: false,
+  halfWidthM: 0.12,
+  draw: (canvas, origin, ppm, color, t) {
+    final p = Poses.stand(t * 1.4);
+    p.handF = p.neck + const Offset(0.22, -0.72);
+    p.elbowF = p.neck + const Offset(0.18, -0.38);
+    StickPainter.draw(canvas, p, origin, ppm, color: color);
+
+    final stroke = Paint()
+      ..color = color
+      ..strokeWidth = math.max(2.0, ppm * 0.032)
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    Offset s(Offset m) => Offset(origin.dx + m.dx * ppm, origin.dy - m.dy * ppm);
+
+    // 水平に伸びた1本線。判定は細いが、足を引っかける。
+    final sway = math.sin(t * 2.2) * 0.03;
+    canvas.drawLine(
+        s(Offset(-0.62, 0.70 + sway)), s(const Offset(0.30, 0.70)), stroke);
+    canvas.drawLine(
+      s(Offset(-0.62, 0.70 + sway)),
+      s(Offset(-0.74, 0.62 + sway)),
+      stroke,
+    );
+  },
+);
+
+/// ゲホ坊。正面にいるが倒せない。かがんで飛沫をやり過ごす。
+final Kind coughBozu = Kind(
+  id: 'cough_bozu',
+  label: 'ゲホ坊',
+  lane: Lane.high,
+  counter: Counter.crouch,
+  attackable: false,
+  halfWidthM: 0.16,
+  draw: (canvas, origin, ppm, color, t) {
+    final p = Poses.stand(t * 2.6);
+    // 口元に手をやる。
+    p.handF = p.neck + const Offset(0.12, -0.10);
+    p.elbowF = p.neck + const Offset(0.24, -0.30);
+    StickPainter.draw(canvas, p, origin, ppm, color: color);
+
+    final dot = Paint()..color = color;
+    Offset s(Offset m) => Offset(origin.dx + m.dx * ppm, origin.dy - m.dy * ppm);
+
+    // 飛沫。頭の高さに飛ぶので、かがめば当たらない。
+    final phase = (t * 1.4) % 1.0;
+    for (var i = 0; i < 5; i++) {
+      final d = 0.22 + phase * 0.5 + i * 0.16;
+      final y = 1.52 - i * 0.04 + math.sin(t * 9 + i) * 0.03;
+      canvas.drawCircle(s(Offset(-d, y)), ppm * (0.035 - i * 0.004), dot);
+    }
+  },
+);
+
+/// 寝落ち侍。もたれかかってくる。かがんですり抜ける。
+final Kind sleeper = Kind(
+  id: 'sleeper',
+  label: '寝落ち侍',
+  lane: Lane.high,
+  counter: Counter.crouch,
+  attackable: false,
+  halfWidthM: 0.18,
+  draw: (canvas, origin, ppm, color, t) {
+    final p = Poses.stand(t * 0.9);
+    // 頭が肩に傾いている。
+    final tilt = 0.10 + math.sin(t * 0.8) * 0.03;
+    p.head = p.head + Offset(-tilt * 2.2, -0.06);
+    p.neck = p.neck + Offset(-tilt, 0);
+    StickPainter.draw(canvas, p, origin, ppm, color: color);
+
+    final stroke = Paint()
+      ..color = color
+      ..strokeWidth = math.max(1.6, ppm * 0.024)
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+    Offset s(Offset m) => Offset(origin.dx + m.dx * ppm, origin.dy - m.dy * ppm);
+
+    // Z が浮かぶ。
+    final float = (t * 0.6) % 1.0;
+    for (var i = 0; i < 2; i++) {
+      final y = 1.70 + i * 0.16 + float * 0.14;
+      final x = -0.34 - i * 0.10;
+      final w = 0.12 - i * 0.03;
+      canvas.drawLine(s(Offset(x, y + w)), s(Offset(x + w, y + w)), stroke);
+      canvas.drawLine(s(Offset(x + w, y + w)), s(Offset(x, y)), stroke);
+      canvas.drawLine(s(Offset(x, y)), s(Offset(x + w, y)), stroke);
+    }
+  },
+);
+
 /// 全カタログ。
-final List<Kind> allKinds = [audioBoss, backpackMajin, carryCase];
+final List<Kind> allKinds = [
+  audioBoss,
+  backpackMajin,
+  carryCase,
+  phoneZombie,
+  umbrellaBlade,
+  coughBozu,
+  sleeper,
+];
+
+/// 何号車から出てくるか。号車が進むごとに新手が加わる。
+final Map<String, int> unlockCar = {
+  carryCase.id: 1,
+  backpackMajin.id: 1,
+  audioBoss.id: 1,
+  phoneZombie.id: 2,
+  umbrellaBlade.id: 4,
+  coughBozu.id: 6,
+  sleeper.id: 8,
+};
+
+/// その号車で初めて出てくる妖怪（いなければ null）。
+Kind? newKindAt(int carNo) {
+  for (final k in allKinds) {
+    if (unlockCar[k.id] == carNo && carNo > 1) return k;
+  }
+  return null;
+}
+
+/// その号車までに解禁されている妖怪。
+List<Kind> kindsFor(int carNo) =>
+    allKinds.where((k) => (unlockCar[k.id] ?? 1) <= carNo).toList();
 
 // ── 1両ぶんの配置 ────────────────────────────────────
 
@@ -201,33 +379,45 @@ List<StageEntity> buildCar(int carNo, double carLengthM) {
   final rnd = math.Random(carNo * 7919 + 13);
   final out = <StageEntity>[];
 
-  // 基本の並び。3つの操作をひと通り使わせる。
-  final base = <(double, Kind)>[
-    (4.0, carryCase),
-    (9.0, backpackMajin),
-    (13.5, audioBoss),
-    (17.0, carryCase),
-  ];
-  for (final (d, k) in base) {
-    out.add(StageEntity(k, d + rnd.nextDouble() * 0.8 - 0.4, rnd.nextDouble() * 6.28));
+  // 1号車はチュートリアル。3つの操作を1回ずつ、順番に使わせる。
+  if (carNo <= 1) {
+    for (final (d, k) in <(double, Kind)>[
+      (5.0, carryCase),
+      (10.0, backpackMajin),
+      (15.0, audioBoss),
+    ]) {
+      out.add(StageEntity(k, d, rnd.nextDouble() * 6.28));
+    }
+    return out;
   }
 
-  // 号車が進むほど1体ずつ増やす。ただし詰まりすぎないよう間隔を確保する。
-  final extra = math.min(4, (carNo - 1) ~/ 2);
-  for (var i = 0; i < extra; i++) {
-    final kind = allKinds[rnd.nextInt(allKinds.length)];
-    var d = 2.0 + rnd.nextDouble() * (carLengthM - 4.0);
-    // 既存の敵と 2.2m 以上あける。反応時間を確保するための最低間隔。
-    var tries = 0;
-    while (out.any((e) => (e.distM - d).abs() < 2.2) && tries < 12) {
-      d = 2.0 + rnd.nextDouble() * (carLengthM - 4.0);
-      tries++;
-    }
-    if (tries < 12) {
-      out.add(StageEntity(kind, d, rnd.nextDouble() * 6.28));
-    }
+  final pool = kindsFor(carNo);
+
+  // 号車が進むほど数が増える。
+  final count = math.min(Tuning.maxEnemiesPerCar,
+      Tuning.baseEnemiesPerCar + ((carNo - 1) * 2 / 3).floor());
+
+  // 間隔は「距離」ではなく「秒」で決める。速くなるほど実距離は広がるが、
+  // 前の敵を捌いてから次に反応するまでの時間は号車が進むほど短くなる。
+  final minGapM = Tuning.minGapSecFor(carNo) * Tuning.runSpeedFor(carNo);
+
+  const first = 3.0;
+  final last = carLengthM - 1.5;
+  final step = (last - first) / math.max(1, count - 1);
+
+  // その号車で初登場する妖怪は、必ず最初に単独で出す（見せ場を作る）。
+  final debut = newKindAt(carNo);
+
+  var prev = -99.0;
+  for (var i = 0; i < count; i++) {
+    var d = first + i * step + (rnd.nextDouble() - 0.5) * step * 0.4;
+    if (d - prev < minGapM) d = prev + minGapM;
+    if (d > last) break;
+
+    final kind = (i == 0 && debut != null) ? debut : pool[rnd.nextInt(pool.length)];
+    out.add(StageEntity(kind, d, rnd.nextDouble() * 6.28));
+    prev = d;
   }
 
-  out.sort((a, b) => a.distM.compareTo(b.distM));
   return out;
 }

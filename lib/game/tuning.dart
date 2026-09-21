@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 /// 通勤退魔録 — 手触りの定数はすべてここに集約する。
 ///
 /// Phase 1 の目的は「片手で気持ちよく走れるか」の一点だけなので、
@@ -18,6 +20,34 @@ class Tuning {
 
   /// 棒人間の身長（メートル）。表示倍率の基準。
   static const double playerHeightM = 1.7;
+
+  // ── 難易度の上がり方 ─────────────────────────────────
+  /// 1両進むごとに増える速度の割合。
+  /// 表示倍率は1号車の速度で決まっているので、速くなるほど
+  /// 「敵が見えてから届くまでの時間」が実質的に短くなる。
+  static const double speedGainPerCar = 0.05;
+
+  /// 速度の上限（1号車比）。ここで頭打ちにして理不尽にしない。
+  static const double maxSpeedMul = 1.7;
+
+  /// 1両あたりの敵の数。
+  static const int baseEnemiesPerCar = 4;
+  static const int maxEnemiesPerCar = 10;
+
+  /// [carNo] 号車での速度倍率。
+  static double speedMulFor(int carNo) =>
+      (1 + speedGainPerCar * (carNo - 1)).clamp(1.0, maxSpeedMul);
+
+  /// [carNo] 号車での実際の速度（m/s）。
+  static double runSpeedFor(int carNo) => runSpeedMps * speedMulFor(carNo);
+
+  /// [carNo] 号車での敵と敵の最小間隔（秒）。
+  /// 前の敵を捌いてから次に反応するまでの余裕。
+  static double minGapSecFor(int carNo) =>
+      math.max(0.58, 0.90 - 0.022 * (carNo - 1));
+
+  /// 号車が変わったときの告知を出している時間。
+  static const double bannerSec = 1.8;
 
   // ── ステージ ───────────────────────────────────────
   /// 1両の長さ。実車と同じ20m。

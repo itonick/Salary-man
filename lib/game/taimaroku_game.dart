@@ -36,6 +36,12 @@ class TaimarokuGame extends FlameGame {
   double _shake = 0;
   double _clock = 0;
 
+  /// 号車が切り替わったときの告知。
+  int _lastCarNo = 1;
+  String? _banner;
+  String _bannerSub = '';
+  double _bannerT = 0;
+
   /// 1メートルあたりのピクセル数。画面幅から逆算するので、
   /// どの端末でも「敵が見えてから届くまでの秒数」が一定になる。
   double ppm = 60;
@@ -88,6 +94,9 @@ class TaimarokuGame extends FlameGame {
     entities.clear();
     bestCar = 1;
     _shake = 0;
+    _lastCarNo = 1;
+    _banner = null;
+    _bannerT = 0;
     state = GameState.running;
   }
 
@@ -100,10 +109,11 @@ class TaimarokuGame extends FlameGame {
     dt = math.min(dt, Tuning.maxFrameSec);
     _clock += dt;
     if (_shake > 0) _shake -= dt;
+    if (_bannerT > 0) _bannerT -= dt;
     if (state != GameState.running) return;
 
-    // 進む。かがむと減速し、転倒中は止まる。
-    final moved = Tuning.runSpeedMps * player.speedFactor * dt;
+    // 進む。号車が進むほど速くなる。かがむと減速し、転倒中は止まる。
+    final moved = Tuning.runSpeedFor(carNo) * player.speedFactor * dt;
     distanceM += moved;
     player.update(dt, moved);
 
@@ -115,6 +125,7 @@ class TaimarokuGame extends FlameGame {
     }
 
     bestCar = math.max(bestCar, carNo);
+    _announceNewCar();
     _ensureCarsGenerated();
     _resolveSwing();
     _resolveCollisions();
@@ -126,6 +137,24 @@ class TaimarokuGame extends FlameGame {
     // 通り過ぎたものは捨てる。
     entities.removeWhere((e) => e.absDistM < distanceM - 3.0);
   }
+
+  /// 号車が変わったら、速くなったことと新手の登場を短く知らせる。
+  void _announceNewCar() {
+    if (carNo == _lastCarNo) return;
+    _lastCarNo = carNo;
+    final debut = newKindAt(carNo);
+    _banner = debut != null ? '新手　${debut.label}' : '$carNo号車　スピードアップ';
+    _bannerSub = debut != null
+        ? _counterLabel(debut.counter)
+        : '×${Tuning.speedMulFor(carNo).toStringAsFixed(2)}';
+    _bannerT = Tuning.bannerSec;
+  }
+
+  String _counterLabel(Counter c) => switch (c) {
+        Counter.swing => '正面　薙いで倒す',
+        Counter.jump => '足元　↑ で飛び越える',
+        Counter.crouch => '頭上　↓ でかがむ',
+      };
 
   void _ensureCarsGenerated() {
     // 画面に入る手前まで先に作っておく。
@@ -199,6 +228,7 @@ class TaimarokuGame extends FlameGame {
     canvas.restore();
 
     _drawHud(canvas);
+    _drawBanner(canvas);
     if (state == GameState.ready) _drawReady(canvas);
     if (state == GameState.finished) _drawResult(canvas);
   }
@@ -405,12 +435,31 @@ class TaimarokuGame extends FlameGame {
     // 検証用の数字。操作の説明は画面下のボタンが兼ねる。
     _text(
       canvas,
-      '被弾 ${player.hits}   転倒 ${player.falls}',
+      '速度 ×${Tuning.speedMulFor(carNo).toStringAsFixed(2)}'
+          '   被弾 ${player.hits}   転倒 ${player.falls}',
       Offset(size.x / 2, gy + size.y * 0.025),
       color: Palette.dim,
       size: size.x * 0.030,
       center: true,
     );
+  }
+
+  /// 号車が変わったときの告知。出て、少し待って、消える。
+  void _drawBanner(Canvas canvas) {
+    final text = _banner;
+    if (text == null || _bannerT <= 0) return;
+    final t = _bannerT / Tuning.bannerSec;
+    // 出だしと終わりだけ薄くする。
+    final a = (t > 0.85 ? (1 - t) / 0.15 : math.min(1.0, t / 0.25)).clamp(0.0, 1.0);
+    final y = size.y * 0.30 - (1 - a) * size.y * 0.02;
+    final isDebut = text.startsWith('新手');
+
+    _text(canvas, text, Offset(size.x / 2, y),
+        color: (isDebut ? Palette.enemy : Palette.you).withValues(alpha: a),
+        size: size.x * 0.065, center: true);
+    _text(canvas, _bannerSub, Offset(size.x / 2, y + size.x * 0.085),
+        color: Palette.text.withValues(alpha: a * 0.9),
+        size: size.x * 0.038, center: true);
   }
 
   void _drawReady(Canvas canvas) {
